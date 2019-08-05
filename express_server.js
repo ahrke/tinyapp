@@ -1,10 +1,12 @@
 const express = require('express');
 const app = express();
 const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser');
 
 const PORT = 3000;
 
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieParser());
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -17,6 +19,16 @@ app.get('/', (req, res) => {
   res.render('urlsIndex');
 });
 
+app.post("/login", (req, res) => {
+  res.cookie('username', req.body.username);
+  res.redirect('/urls')
+});
+
+app.post("/logout/", (req,res) => {
+  res.clearCookie("username");
+  res.redirect('/urls');
+})
+
 app.get("/u/:shortURL", (req, res) => {
   // let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   // res.render("urls_show", templateVars);
@@ -26,25 +38,39 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.get('/urls', (req, res) => {
   let templateVars = {
-    urls: urlDatabase
+    urls: urlDatabase,
+    username: req.cookies["username"]
   }
   res.render('urlsIndex', templateVars);
 });
 
-app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
+app.post("/urls", (req, res) => {  // Log the POST request body to the console
   let urlShortened = generateRandomString();
   urlDatabase[urlShortened] = req.body.longURL;
 
-  let templateVars = {
-    urls: urlDatabase
-  }
-  console.log(templateVars)
   res.redirect('/urls/' + urlShortened);
 });
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  let templateVars = {
+    username: req.cookies["username"]
+  }
+  res.render("urls_new", templateVars);
+});
+
+
+app.post("/urls/:id", (req, res) => {
+  urlDatabase[req.params.id] = req.body.longURL;
+  res.redirect("/urls/" + req.params.id);
+});
+
+app.get("/urls/:shortURL", (req, res) => {
+  let templateVars = { 
+    shortURL: req.params.shortURL, 
+    longURL: urlDatabase[req.params.shortURL],
+    username: req.cookies["username"]
+  };
+  res.render("urls_show", templateVars);
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
@@ -52,10 +78,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls');
 })
 
-app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  res.render("urls_show", templateVars);
-});
 
 app.get('/whoa', (req,res) => {
   res.render('whoa');
@@ -67,7 +89,7 @@ app.get('/path/:where', (req, res) => {
 })
 
 app.listen(PORT, () => {
-  console.log('Example app listening to port:',PORT);
+  console.log('Server listening to port:',PORT);
 });
 
 const generateRandomString = () => {
