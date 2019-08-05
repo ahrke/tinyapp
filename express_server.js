@@ -14,7 +14,14 @@ const urlDatabase = {
 app.set('view engine', 'ejs');
 
 app.get('/', (req, res) => {
-  res.render('index');
+  res.render('urlsIndex');
+});
+
+app.get("/u/:shortURL", (req, res) => {
+  // let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  // res.render("urls_show", templateVars);
+  const longURL = urlDatabase[req.params.shortURL];
+  res.redirect(longURL);
 });
 
 app.get('/urls', (req, res) => {
@@ -27,12 +34,13 @@ app.get('/urls', (req, res) => {
 app.post("/urls", (req, res) => {
   console.log(req.body);  // Log the POST request body to the console
   let urlShortened = generateRandomString();
+  urlDatabase[urlShortened] = req.body.longURL;
+
   let templateVars = {
     urls: urlDatabase
   }
-  templateVars.urls[urlShortened] = req.body.longURL;
   console.log(templateVars)
-  res.render("urlsIndex", templateVars);         // Respond with 'Ok' (we will replace this)
+  res.redirect('/urls/' + urlShortened);
 });
 
 app.get("/urls/new", (req, res) => {
