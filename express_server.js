@@ -3,7 +3,7 @@ const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 
-const { all, add, getUser } = require('./users');
+const { all, add, getUser, getValueFromUser, getUserWhereValueIs } = require('./users');
 
 const PORT = 3000;
 
@@ -26,9 +26,22 @@ app.get('/', (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  currentUser = req.body.username;
-  res.redirect('/urls')
+  let user = getUserWhereValueIs('email', req.body.email);
+
+  if (req.body.password === getValueFromUser(user.id, 'password')) {
+    let id = user.id;
+    setCookie(res, id);
+    res.redirect('/urls')
+  } else {
+    res.redirect('/loginFail')
+  }
+});
+
+app.get('/loginFail', (req, res) => {
+  let templateVars = {
+    username: currentUser
+  }
+  res.render('loginFail', templateVars);
 });
 
 app.post("/logout/", (req,res) => {
@@ -87,7 +100,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post('/register', (req, res) => {
-  console.log("printing getUser: ",getUser("user2RandomID"));
   let newId = generateRandomString();
   let newUser = {
     id: newId,
@@ -116,6 +128,12 @@ app.post('/register', (req, res) => {
 app.listen(PORT, () => {
   console.log('Server listening to port:',PORT);
 });
+
+const setCookie = (res, id) => {
+  res.cookie('id', id);
+  let user = getUser(id);
+  currentUser = user.name;
+}
 
 const generateRandomString = () => {
   const ALPHA = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
