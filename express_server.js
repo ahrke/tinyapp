@@ -19,11 +19,25 @@ let users = all();
 
 let currentUser = '';
 
+let templateVars = {
+  username: currentUser
+}
+
 app.set('view engine', 'ejs');
 
+// Index 
 app.get('/', (req, res) => {
+  if (req.cookies.username) {
+    currentUser = req.cookies.username
+  }
   res.render('urlsIndex');
 });
+
+/*
+
+  Login and log out
+
+*/
 
 app.post("/login", (req, res) => {
   let user = getUserWhereValueIs('email', req.body.email);
@@ -50,12 +64,24 @@ app.post("/logout/", (req,res) => {
   res.redirect('/urls');
 })
 
+/*
+
+  longURL redirect
+
+*/
+
 app.get("/u/:shortURL", (req, res) => {
   // let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   // res.render("urls_show", templateVars);
   const longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
 });
+
+/*
+
+  URL Main page, and User page
+
+*/
 
 app.get('/urls', (req, res) => {
   let templateVars = {
@@ -65,12 +91,15 @@ app.get('/urls', (req, res) => {
   res.render('urlsIndex', templateVars);
 });
 
-app.post("/urls", (req, res) => {  // Log the POST request body to the console
+// Add new tinyURL, then redirect to new URL's info page
+app.post("/urls", (req, res) => {  
   let urlShortened = generateRandomString();
   urlDatabase[urlShortened] = req.body.longURL;
 
   res.redirect('/urls/' + urlShortened);
 });
+
+// New URL page
 
 app.get("/urls/new", (req, res) => {
   let templateVars = {
@@ -79,11 +108,7 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
-
-app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
-  res.redirect("/urls/" + req.params.id);
-});
+// selected URL info page
 
 app.get("/urls/:shortURL", (req, res) => {
   let templateVars = { 
@@ -94,25 +119,69 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+// Update/change the longURL link of a selected tinyURL
+app.post("/urls/:id", (req, res) => {
+  urlDatabase[req.params.id] = req.body.longURL;
+  res.redirect("/urls/" + req.params.id);
+});
+
+// Delete a tinyURL
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL]
   res.redirect('/urls');
 });
 
+
+/*
+
+  Registration
+
+*/
+
+// Registers a new user. Adding to database, and then log in user
+
 app.post('/register', (req, res) => {
-  let newId = generateRandomString();
-  let newUser = {
-    id: newId,
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password
+  if (
+    !getUserWhereValueIs('email', req.body.email) 
+    && req.body.email !== ''
+    && req.body.password !== ''
+  ) {
+    let newId = generateRandomString();
+    let newUser = {
+      id: newId,
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password
+    }
+    add(newUser);
+    currentUser = newUser.name;
+    if (req.cookies['username']) {
+      req.clearCookie('username');
+    }
+    res.redirect('/urls');
+  } else {
+    let message = 'Idiot! ';
+    if (req.body.email === '') {
+      message += 'You need an email! ';
+    } else if (getUserWhereValueIs('email', req.body.email)) {
+      message += 'Someone already used that email...get your own! ';
+    }
+
+    if (req.body.password === '') {
+      message += 'You need a password, dummy! ';
+    }
+    message += 'Try again...please';
+
+    let templateVars = {
+      username: currentUser,
+      message
+    }
+    res.render('registration', templateVars);
   }
-  add(newUser);
-  currentUser = newUser.name;
-  if (req.cookies['username']) {
-    req.clearCookie('username');
-  }
-  res.redirect('/urls')
+});
+
+app.get('/registration', (req, res) => {
+  res.render('registration', templateVars);
 });
 
 // 

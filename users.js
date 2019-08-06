@@ -29,6 +29,6 @@ module.exports = {
   },
   getUserWhereValueIs: (field, value) => {
     let user = Object.keys(users).filter(u => users[u][field] === value);
-    return users[user]
+    return user ? users[user] : undefined;
   }
 }
