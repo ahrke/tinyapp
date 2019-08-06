@@ -3,6 +3,8 @@ const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 
+const { all, add, getUser } = require('./users');
+
 const PORT = 3000;
 
 app.use(bodyParser.urlencoded({extended: true}));
@@ -13,6 +15,10 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+let users = all();
+
+let currentUser = '';
+
 app.set('view engine', 'ejs');
 
 app.get('/', (req, res) => {
@@ -21,11 +27,13 @@ app.get('/', (req, res) => {
 
 app.post("/login", (req, res) => {
   res.cookie('username', req.body.username);
+  currentUser = req.body.username;
   res.redirect('/urls')
 });
 
 app.post("/logout/", (req,res) => {
   res.clearCookie("username");
+  currentUser = '';
   res.redirect('/urls');
 })
 
@@ -39,7 +47,7 @@ app.get("/u/:shortURL", (req, res) => {
 app.get('/urls', (req, res) => {
   let templateVars = {
     urls: urlDatabase,
-    username: req.cookies["username"]
+    username: currentUser
   }
   res.render('urlsIndex', templateVars);
 });
@@ -53,7 +61,7 @@ app.post("/urls", (req, res) => {  // Log the POST request body to the console
 
 app.get("/urls/new", (req, res) => {
   let templateVars = {
-    username: req.cookies["username"]
+    username: currentUser
   }
   res.render("urls_new", templateVars);
 });
@@ -68,7 +76,7 @@ app.get("/urls/:shortURL", (req, res) => {
   let templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL],
-    username: req.cookies["username"]
+    username: currentUser
   };
   res.render("urls_show", templateVars);
 });
@@ -76,17 +84,34 @@ app.get("/urls/:shortURL", (req, res) => {
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL]
   res.redirect('/urls');
-})
-
-
-app.get('/whoa', (req,res) => {
-  res.render('whoa');
 });
 
-app.get('/path/:where', (req, res) => {
-  let arg = res.params.where;
+app.post('/register', (req, res) => {
+  console.log("printing getUser: ",getUser("user2RandomID"));
+  let newId = generateRandomString();
+  let newUser = {
+    id: newId,
+    name: req.body.name,
+    email: req.body.email,
+    password: req.body.password
+  }
+  add(newUser);
+  currentUser = newUser.name;
+  if (req.cookies['username']) {
+    req.clearCookie('username');
+  }
+  res.redirect('/urls')
+});
 
-})
+// 
+// app.get('/whoa', (req,res) => {
+//   res.render('whoa');
+// });
+
+// app.get('/path/:where', (req, res) => {
+//   let arg = res.params.where;
+
+// })
 
 app.listen(PORT, () => {
   console.log('Server listening to port:',PORT);

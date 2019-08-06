@@ -10,12 +10,23 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
       <% if (!username) { %>
-        <form action="/login" method="POST">
-          <div class="form-group mb-2">
-            <input name="username" class="form" />
-            <button type="submit" class="btn btn-primary">Log In</button>
+        <div>
+          <button type="button" class="btn btn-primary" data-toggle="collapse" data-target="#login" 
+            aria-expanded="false" aria-controls="login" onclick="this.style = 'display: none'; document.getElementById('btnRegister').style = 'display: none'">
+            Log In
+          </button>
+          <div class="collapse" id="login">
+            <form action="/login" method="POST" id="login" class="form-inline">
+              <input type="text" name="username" class="form-control" />
+              <button type="submit" class="btn btn-primary" style="margin-left: 10px;">Login Meow!</button>
+            </form>
           </div>
-        </form>
+
+          <button type="button" class="btn btn-primary" id="btnRegister" data-toggle="modal" data-target="#register">
+            Register
+          </button>
+          <% include ./register %>
+        </div>
         
       <% } else { %>
         <div class="form-group mb-2" style="display: flex">
