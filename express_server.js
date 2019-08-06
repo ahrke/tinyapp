@@ -42,24 +42,33 @@ app.get('/', (req, res) => {
 app.post("/login", (req, res) => {
   let user = getUserWhereValueIs('email', req.body.email);
 
-  if (req.body.password === getValueFromUser(user.id, 'password')) {
+  if (user && req.body.password === getValueFromUser(user.id, 'password')) {
     let id = user.id;
     setCookie(res, id);
     res.redirect('/urls')
   } else {
-    res.redirect('/loginFail')
+    let message = 'Wrong login credentials, try again cretin'
+    let templateVars = {
+      username: currentUser,
+      message,
+      error: true
+    }
+    res.render('login', templateVars)
   }
 });
 
-app.get('/loginFail', (req, res) => {
+app.get('/login', (req, res) => {
+  let message = 'Log in, please';
   let templateVars = {
-    username: currentUser
+    username: currentUser,
+    message,
+    error: false
   }
-  res.render('loginFail', templateVars);
+  res.render('login', templateVars);
 });
 
 app.post("/logout/", (req,res) => {
-  res.clearCookie("username");
+  res.clearCookie("id");
   currentUser = '';
   res.redirect('/urls');
 })
@@ -102,6 +111,9 @@ app.post("/urls", (req, res) => {
 // New URL page
 
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies['id']) {
+    res.redirect('/login')
+  }
   let templateVars = {
     username: currentUser
   }
@@ -155,9 +167,7 @@ app.post('/register', (req, res) => {
     }
     add(newUser);
     currentUser = newUser.name;
-    if (req.cookies['username']) {
-      req.clearCookie('username');
-    }
+    setCookie(res, newId);
     res.redirect('/urls');
   } else {
     let message = 'Idiot! ';
