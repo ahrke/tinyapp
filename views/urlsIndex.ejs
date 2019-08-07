@@ -24,10 +24,18 @@
       <tbody>
         <% for(let url of urls) { %>
           <tr>
-            <td><a href="/u/<%= url.shortURL %>"><%= url.shortURL %></a></td>
+            <td>
+              <a href="/u/<%= url.shortURL %>"><%= url.shortURL %></a>  <% let infoText = `Date Created: ${url.dateCreated}\nNumber of Visits: ${url.count}` %>
+              <button type="button" class="btn btn-outline-warning" 
+                title="<%=infoText %>"
+                style='padding-bottom: 0; margin-left: 20px'>
+                <h5>?</h5>
+              </button>
+            </td>
             <td><%= url.longURL %></td>
             <td><form method="GET" action="/urls/<%= url.shortURL %>"><button class="btn btn-outline-primary">edit</button></form></td>
             <td><form method="POST" action="/urls/<%= url.shortURL %>/delete"><button class="btn btn-outline-danger">delete</button></form></td>
+            
           </tr>
         <% } %>
       </tbody>

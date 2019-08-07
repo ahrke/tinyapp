@@ -25,7 +25,7 @@ app.set('view engine', 'ejs');
 // Index
 app.get('/', (req, res) => {
   if (req.currentUser) {
-    res.redirect('/urls/:' + req.currentUser.id);
+    res.redirect('/urls');
   }
   res.redirect('/login');
 });
