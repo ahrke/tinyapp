@@ -4,7 +4,7 @@ const bodyParser = require("body-parser");
 // const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
-const {currentUser} = require('./middleware/currentUser');
+const { currentUser } = require('./middleware/currentUser');
 
 const { all, add, getUser, getValueFromUser, getUserWhereValueIs } = require('./data/users');
 const urlDB = require('./data/urlDatabase');
@@ -84,10 +84,14 @@ app.post("/logout/", (req,res) => {
 */
 
 app.get("/u/:shortURL", (req, res) => {
-  // let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  // res.render("urls_show", templateVars);
-  const longURL = urlDB.all()[req.params.shortURL].longURL;
-  res.redirect(longURL);
+  let shortURL = req.params.shortURL;
+  if (urlDB.doesUrlExist(shortURL)) {
+    urlDB.addCountFor(shortURL);
+    const longURL = urlDB.all()[shortURL].longURL;
+    res.redirect(longURL);
+  } else {
+    res.redirect('/urls');
+  }
 });
 
 /*
@@ -115,12 +119,16 @@ app.get('/urls', (req, res) => {
 app.post("/urls", (req, res) => {
   if (req.currentUser) {
     let urlShortened = generateRandomString();
+    let longURL = req.body.longURL;
+    if (!longURL.includes('http://')) {
+      longURL = 'http://' + longURL;
+    }
     let newURL = {
-      longURL: req.body.longURL,
+      longURL: longURL,
       userID: req.currentUser.id
     };
 
-    urlDB.all()[urlShortened] = newURL;
+    urlDB.add(urlShortened, newURL);
   
     res.redirect('/urls');
   } else {

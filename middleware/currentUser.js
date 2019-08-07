@@ -14,6 +14,7 @@ module.exports = {
     if (req.session.userId) {
       let userID = req.session.userId;
       let user = users.getUser(userID);
+      console.log(user)
       if (!user) {
         req.session = null;
         next();
