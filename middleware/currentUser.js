@@ -1,6 +1,6 @@
 const express = require('express');
-const users = require('../users');
-const urlDB = require('../urlDatabase');
+const users = require('../data/users');
+const urlDB = require('../data/urlDatabase');
 const cookieSession = require('cookie-session');
 
 const app = express();

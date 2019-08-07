@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { getUser, getValueFromUser, getUserWhereValueIs } = require('../users');
+const { getUser, getValueFromUser, getUserWhereValueIs } = require('../data/users');
 
 describe("usersDatabase", () => {
   it("(for getUser) returns a user when getUser is called", () => {

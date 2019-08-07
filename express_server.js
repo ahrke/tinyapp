@@ -6,8 +6,8 @@ const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 const {currentUser} = require('./middleware/currentUser');
 
-const { all, add, getUser, getValueFromUser, getUserWhereValueIs } = require('./users');
-const urlDB = require('./urlDatabase');
+const { all, add, getUser, getValueFromUser, getUserWhereValueIs } = require('./data/users');
+const urlDB = require('./data/urlDatabase');
 
 const PORT = 3000;
 
