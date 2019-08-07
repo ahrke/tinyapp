@@ -11,16 +11,16 @@ app.use(cookieSession({
 
 module.exports = {
   currentUser: (req, res, next) => {
-    if (req.session.user_id) {
-      let userID = req.session.user_id;
+    if (req.session.userId) {
+      let userID = req.session.userId;
       let user = users.getUser(userID);
       if (!user) {
-        req.session.user_id = null;
+        req.session = null;
         next();
       }
       user["urls"] = urlDB.getUserURLs(user.id);
       req.currentUser = user;
-    };
+    }
     next();
   }
-}
+};

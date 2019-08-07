@@ -9,11 +9,17 @@
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
-      <% if (!username) { %>
+      <% if (username) { %>
+        <div class="form-group mb-2" style="display: flex">
+          <a class="navbar-brand" href="/urls"><%= username %></a>
+          <form action="/logout" method="POST"><button type="submit" class="btn btn-primary">logout</button></form>
+        </div>
+        
+      <% } else { %>
         <div>
-          <button type="button" class="btn btn-primary" data-toggle="collapse" data-target="#login" 
-            aria-expanded="false" aria-controls="login" onclick="this.style = 'display: none'; document.getElementById('btnRegister').style = 'display: none'">
-            Log In
+        <button type="button" class="btn btn-primary" data-toggle="collapse" data-target="#login" 
+        aria-expanded="false" aria-controls="login" onclick="this.style = 'display: none'; document.getElementById('btnRegister').style = 'display: none'">
+        Log In
           </button>
           <div class="collapse" id="login">
             <form action="/login" method="POST" id="login" class="form-inline">
@@ -27,12 +33,6 @@
             Register
           </button>
           <% include ./register %>
-        </div>
-        
-      <% } else { %>
-        <div class="form-group mb-2" style="display: flex">
-          <a class="navbar-brand" href="/urls"><%= username %></a>
-          <form action="/logout" method="POST"><button type="submit" class="btn btn-primary">logout</button></form>
         </div>
       <% } %>
     </div>

@@ -22,12 +22,12 @@ let users = all();
 
 app.set('view engine', 'ejs');
 
-// Index 
+// Index
 app.get('/', (req, res) => {
   if (req.currentUser) {
-    res.redirect('/urls/:'+req.currentUser.id);
+    res.redirect('/urls/:' + req.currentUser.id);
   }
-  res.redirect('/login')
+  res.redirect('/login');
 });
 
 /*
@@ -48,19 +48,19 @@ app.post("/login", (req, res) => {
     setCookie(req, id);
     res.redirect('/urls');
   } else {
-    let message = 'Wrong login credentials, try again cretin'
+    let message = 'Wrong login credentials, try again cretin';
     let templateVars = {
       username: undefined,
       message,
       error: true
-    }
-    res.render('login', templateVars)
+    };
+    res.render('login', templateVars);
   }
 });
 
 app.get('/login', (req, res) => {
   if (req.currentUser) {
-    res.redirect('/urls')
+    res.redirect('/urls');
   }
 
   let message = 'Log in, please';
@@ -68,14 +68,14 @@ app.get('/login', (req, res) => {
     username: undefined,
     message,
     error: false
-  }
+  };
   res.render('login', templateVars);
 });
 
 app.post("/logout/", (req,res) => {
-  req.session.user_id = null;
+  req.session = null;
   res.redirect('/login');
-})
+});
 
 /*
 
@@ -86,7 +86,7 @@ app.post("/logout/", (req,res) => {
 app.get("/u/:shortURL", (req, res) => {
   // let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   // res.render("urls_show", templateVars);
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDB.all()[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
@@ -101,12 +101,13 @@ app.get('/urls', (req, res) => {
     res.redirect('/login');
   }
   let templateVars = {
-    urls: req.currentUser.urls,
+    urls: req.currentUser.urls || [],
     username: req.currentUser.name
-  }
-  if (templateVars.urls === undefined) {
-    res.redirect('/urls/new')
-  }
+  };
+  // if user does not have any urls, redirect to generate new
+  // if (templateVars.urls === undefined) {
+  //   res.redirect('/urls/new');
+  // }
   res.render('urlsIndex', templateVars);
 });
 
@@ -123,7 +124,7 @@ app.post("/urls", (req, res) => {
   
     res.redirect('/urls');
   } else {
-    res.redirect('/login')
+    res.redirect('/login');
   }
 });
 
@@ -131,11 +132,11 @@ app.post("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   if (!req.currentUser) {
-    res.redirect('/login')
+    res.redirect('/login');
   }
   let templateVars = {
     username: req.currentUser.name
-  }
+  };
   res.render("urls_new", templateVars);
 });
 
@@ -143,14 +144,14 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/urls/:shortURL", (req, res) => {
   if (!req.currentUser) {
-    res.redirect('/login')
+    res.redirect('/login');
   } else if (!belongToUser(req.currentUser, req.params.shortURL)) {
-    res.redirect('/urls')
+    res.redirect('/urls');
   }
-  let templateVars = { 
-    shortURL: req.params.shortURL, 
+  let templateVars = {
+    shortURL: req.params.shortURL,
     longURL: urlDB.all()[req.params.shortURL].longURL,
-    username: currentUser.name
+    username: req.currentUser.name
   };
   res.render("urls_show", templateVars);
 });
@@ -158,9 +159,9 @@ app.get("/urls/:shortURL", (req, res) => {
 // Update/change the longURL link of a selected tinyURL
 app.post("/urls/:id", (req, res) => {
   if (!req.currentUser) {
-    res.redirect('/login')
+    res.redirect('/login');
   } else if (!belongToUser(req.currentUser, req.params.id)) {
-    res.redirect('/urls')
+    res.redirect('/urls');
   } else {
     urlDB.all()[req.params.id].longURL = req.body.longURL;
     res.redirect("/urls");
@@ -170,10 +171,11 @@ app.post("/urls/:id", (req, res) => {
 // Delete a tinyURL
 app.post("/urls/:shortURL/delete", (req, res) => {
   if (!req.currentUser || !belongToUser(req.currentUser, req.params.shortURL)) {
-    res.redirect('/login')
+    res.redirect('/login');
+  } else {
+    delete urlDB.all()[req.params.shortURL];
+    res.redirect('/urls');
   }
-  delete urlDB.all()[req.params.shortURL];
-  res.redirect('/urls');
 });
 
 
@@ -187,7 +189,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 app.post('/register', (req, res) => {
   if (
-    !getUserWhereValueIs('email', req.body.email) 
+    !getUserWhereValueIs('email', req.body.email)
     && req.body.email !== ''
     && req.body.password !== ''
   ) {
@@ -197,7 +199,7 @@ app.post('/register', (req, res) => {
       name: req.body.name,
       email: req.body.email,
       password: encryptPW(req.body.password)
-    }
+    };
     add(newUser);
     setCookie(req, newId);
     res.redirect('/urls');
@@ -212,21 +214,22 @@ app.post('/register', (req, res) => {
     if (req.body.password === '') {
       message += 'You need a password, dummy! ';
     }
+
     message += 'Try again...please';
 
     let templateVars = {
-      username: currentUser,
+      username: undefined,
       message
-    }
+    };
     res.render('registration', templateVars);
   }
 });
 
 app.get('/registration', (req, res) => {
-  res.render('registration', templateVars);
+  res.render('registration', { username: undefined, message: undefined });
 });
 
-// 
+//
 // app.get('/whoa', (req,res) => {
 //   res.render('whoa');
 // });
@@ -240,11 +243,11 @@ app.listen(PORT, () => {
   console.log('Server listening to port:',PORT);
 });
 
-const encryptPW = function generateEncryptedPassword(str) {
+const encryptPW = (str) => {
   return bcrypt.hashSync(str, 10);
 };
 
-const checkPW = function isThisTheCorrectPasswordForUser(userID, str) {
+const checkPW = (userID, str) => {
   let encryptedPW = getValueFromUser(userID, 'password');
   return bcrypt.compareSync(str, encryptedPW);
 };
@@ -255,11 +258,11 @@ const belongToUser = (currentUser,urlID) => {
   } else {
     return true;
   }
-}
+};
 
 const setCookie = (req, id) => {
-  req.session.user_id = id;
-}
+  req.session.userId = id;
+};
 
 const generateRandomString = () => {
   const ALPHA = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -270,4 +273,4 @@ const generateRandomString = () => {
   }
 
   return urlStr;
-}
+};

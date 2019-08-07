@@ -6,8 +6,10 @@ const urlDatabase = {
 };
 
 module.exports = {
-  all: () => { return urlDatabase },
-  add: (tinyURL, urlObj) => { urlDatabase[tinyURL] = urlObj },
+  all: () => urlDatabase,
+  add: (tinyURL, urlObj) => {
+    urlDatabase[tinyURL] = urlObj;
+  },
   getUserURLs: (user) => {
     let userURLs = [];
     Object.keys(urlDatabase).filter(url => urlDatabase[url].userID === user).forEach(u => {
@@ -16,7 +18,7 @@ module.exports = {
         longURL: urlDatabase[u].longURL
       };
       userURLs.push(obj);
-    })
+    });
     return userURLs;
   }
-}
+};
