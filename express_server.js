@@ -2,35 +2,27 @@ const express = require('express');
 const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const {currentUser} = require('./middleware/currentUser');
 
 const { all, add, getUser, getValueFromUser, getUserWhereValueIs } = require('./users');
+const urlDB = require('./urlDatabase');
 
 const PORT = 3000;
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
-
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-};
+app.use(currentUser);
 
 let users = all();
-
-let currentUser = '';
-
-let templateVars = {
-  username: currentUser
-}
 
 app.set('view engine', 'ejs');
 
 // Index 
 app.get('/', (req, res) => {
-  if (req.cookies.username) {
-    currentUser = req.cookies.username
+  if (req.currentUser) {
+    res.redirect('/urls/:'+req.currentUser.id);
   }
-  res.render('urlsIndex');
+  res.redirect('/login')
 });
 
 /*
@@ -40,16 +32,20 @@ app.get('/', (req, res) => {
 */
 
 app.post("/login", (req, res) => {
+  if (req.currentUser) {
+    res.redirect('/urls');
+  }
+
   let user = getUserWhereValueIs('email', req.body.email);
 
   if (user && req.body.password === getValueFromUser(user.id, 'password')) {
     let id = user.id;
     setCookie(res, id);
-    res.redirect('/urls')
+    res.redirect('/urls');
   } else {
     let message = 'Wrong login credentials, try again cretin'
     let templateVars = {
-      username: currentUser,
+      username: undefined,
       message,
       error: true
     }
@@ -58,9 +54,13 @@ app.post("/login", (req, res) => {
 });
 
 app.get('/login', (req, res) => {
+  if (req.currentUser) {
+    res.redirect('/urls')
+  }
+
   let message = 'Log in, please';
   let templateVars = {
-    username: currentUser,
+    username: undefined,
     message,
     error: false
   }
@@ -69,8 +69,7 @@ app.get('/login', (req, res) => {
 
 app.post("/logout/", (req,res) => {
   res.clearCookie("id");
-  currentUser = '';
-  res.redirect('/urls');
+  res.redirect('/login');
 })
 
 /*
@@ -93,29 +92,44 @@ app.get("/u/:shortURL", (req, res) => {
 */
 
 app.get('/urls', (req, res) => {
+  if (!req.currentUser) {
+    res.redirect('/login');
+  }
   let templateVars = {
-    urls: urlDatabase,
-    username: currentUser
+    urls: req.currentUser.urls,
+    username: req.currentUser.name
+  }
+  if (templateVars.urls === undefined) {
+    res.redirect('/urls/new')
   }
   res.render('urlsIndex', templateVars);
 });
 
 // Add new tinyURL, then redirect to new URL's info page
-app.post("/urls", (req, res) => {  
-  let urlShortened = generateRandomString();
-  urlDatabase[urlShortened] = req.body.longURL;
+app.post("/urls", (req, res) => {
+  if (req.currentUser) {
+    let urlShortened = generateRandomString();
+    let newURL = {
+      longURL: req.body.longURL,
+      userID: req.currentUser.id
+    };
 
-  res.redirect('/urls/' + urlShortened);
+    urlDB.all()[urlShortened] = newURL;
+  
+    res.redirect('/urls');
+  } else {
+    res.redirect('/login')
+  }
 });
 
 // New URL page
 
 app.get("/urls/new", (req, res) => {
-  if (!req.cookies['id']) {
+  if (!req.currentUser) {
     res.redirect('/login')
   }
   let templateVars = {
-    username: currentUser
+    username: req.currentUser.name
   }
   res.render("urls_new", templateVars);
 });
@@ -123,23 +137,37 @@ app.get("/urls/new", (req, res) => {
 // selected URL info page
 
 app.get("/urls/:shortURL", (req, res) => {
+  if (!req.currentUser) {
+    res.redirect('/login')
+  } else if (!belongToUser(req.currentUser, req.params.shortURL)) {
+    res.redirect('/urls')
+  }
   let templateVars = { 
     shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL],
-    username: currentUser
+    longURL: urlDB.all()[req.params.shortURL].longURL,
+    username: currentUser.name
   };
   res.render("urls_show", templateVars);
 });
 
 // Update/change the longURL link of a selected tinyURL
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
-  res.redirect("/urls/" + req.params.id);
+  if (!req.currentUser) {
+    res.redirect('/login')
+  } else if (!belongToUser(req.currentUser, req.params.id)) {
+    res.redirect('/urls')
+  } else {
+    urlDB.all()[req.params.id].longURL = req.body.longURL;
+    res.redirect("/urls");
+  }
 });
 
 // Delete a tinyURL
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL]
+  if (!req.currentUser || !belongToUser(req.currentUser, req.params.shortURL)) {
+    res.redirect('/login')
+  }
+  delete urlDB.all()[req.params.shortURL];
   res.redirect('/urls');
 });
 
@@ -208,10 +236,16 @@ app.listen(PORT, () => {
   console.log('Server listening to port:',PORT);
 });
 
+const belongToUser = (currentUser,urlID) => {
+  if (currentUser.urls.filter(obj => obj.shortURL === urlID).length < 1) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
 const setCookie = (res, id) => {
   res.cookie('id', id);
-  let user = getUser(id);
-  currentUser = user.name;
 }
 
 const generateRandomString = () => {

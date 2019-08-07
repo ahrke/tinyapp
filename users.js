@@ -1,7 +1,7 @@
 const users = { 
-  "userRandomID": {
+  "aJ48lW": {
     name: "General Cacti",
-    id: "userRandomID", 
+    id: "aJ48lW", 
     email: "user@example.com", 
     password: "purple-monkey-dinosaur"
   },
@@ -22,7 +22,7 @@ module.exports = {
   },
   getValueFromUser: (id, field) => {
     if (!users[id]) {
-      return undefine;
+      return undefined;
     } else {
       return users[id][field];
     }
