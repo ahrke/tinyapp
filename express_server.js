@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
 const {currentUser} = require('./middleware/currentUser');
 
 const { all, add, getUser, getValueFromUser, getUserWhereValueIs } = require('./users');
@@ -38,7 +39,7 @@ app.post("/login", (req, res) => {
 
   let user = getUserWhereValueIs('email', req.body.email);
 
-  if (user && req.body.password === getValueFromUser(user.id, 'password')) {
+  if (user && checkPW(user.id, req.body.password)) {
     let id = user.id;
     setCookie(res, id);
     res.redirect('/urls');
@@ -191,10 +192,9 @@ app.post('/register', (req, res) => {
       id: newId,
       name: req.body.name,
       email: req.body.email,
-      password: req.body.password
+      password: encryptPW(req.body.password)
     }
     add(newUser);
-    currentUser = newUser.name;
     setCookie(res, newId);
     res.redirect('/urls');
   } else {
@@ -235,6 +235,15 @@ app.get('/registration', (req, res) => {
 app.listen(PORT, () => {
   console.log('Server listening to port:',PORT);
 });
+
+const encryptPW = function generateEncryptedPassword(str) {
+  return bcrypt.hashSync(str, 10);
+};
+
+const checkPW = function isThisTheCorrectPasswordForUser(userID, str) {
+  let encryptedPW = getValueFromUser(userID, 'password');
+  return bcrypt.compareSync(str, encryptedPW);
+};
 
 const belongToUser = (currentUser,urlID) => {
   if (currentUser.urls.filter(obj => obj.shortURL === urlID).length < 1) {
