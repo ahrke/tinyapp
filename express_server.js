@@ -1,7 +1,8 @@
 const express = require('express');
 const app = express();
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
+// const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 const {currentUser} = require('./middleware/currentUser');
 
@@ -11,7 +12,10 @@ const urlDB = require('./urlDatabase');
 const PORT = 3000;
 
 app.use(bodyParser.urlencoded({extended: true}));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['turtle-force=five', 'backgammon']
+}));
 app.use(currentUser);
 
 let users = all();
@@ -41,7 +45,7 @@ app.post("/login", (req, res) => {
 
   if (user && checkPW(user.id, req.body.password)) {
     let id = user.id;
-    setCookie(res, id);
+    setCookie(req, id);
     res.redirect('/urls');
   } else {
     let message = 'Wrong login credentials, try again cretin'
@@ -69,7 +73,7 @@ app.get('/login', (req, res) => {
 });
 
 app.post("/logout/", (req,res) => {
-  res.clearCookie("id");
+  req.session.user_id = null;
   res.redirect('/login');
 })
 
@@ -195,7 +199,7 @@ app.post('/register', (req, res) => {
       password: encryptPW(req.body.password)
     }
     add(newUser);
-    setCookie(res, newId);
+    setCookie(req, newId);
     res.redirect('/urls');
   } else {
     let message = 'Idiot! ';
@@ -253,8 +257,8 @@ const belongToUser = (currentUser,urlID) => {
   }
 }
 
-const setCookie = (res, id) => {
-  res.cookie('id', id);
+const setCookie = (req, id) => {
+  req.session.user_id = id;
 }
 
 const generateRandomString = () => {
